@@ -4,6 +4,7 @@
 
 <br />
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-llmpipeline.netlify.app-10b981?style=for-the-badge&logo=netlify&logoColor=white)](https://llmpipeline.netlify.app/)
 [![Single File](https://img.shields.io/badge/Architecture-Single%20HTML%20File-4f46e5?style=for-the-badge&logo=html5&logoColor=white)](index.html)
 [![Zero Dependencies](https://img.shields.io/badge/Build%20Tools-Zero%20%2F%20No%20npm-0ea5e9?style=for-the-badge)](index.html)
 [![Plotly.js 3D](https://img.shields.io/badge/3D%20Charts-Plotly.js%203.1.1-7c3aed?style=for-the-badge&logo=plotly&logoColor=white)](https://plotly.com/javascript/)
@@ -15,6 +16,14 @@
 </p>
 
 </div>
+
+---
+
+## Live URL
+
+Try **LLM Pipeline Explorer** directly in your browser (including both **Spelling-based** and **Meaning-based** `all-MiniLM-L6-v2` 3D modes):
+
+**https://llmpipeline.netlify.app/**
 
 ---
 
