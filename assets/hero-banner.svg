@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 280" width="1000" height="280" role="img" aria-label="LLM Pipeline Explorer animated banner">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0c4a6e"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#a5f3fc"/>
+      <stop offset="100%" stop-color="#c4b5fd"/>
+    </linearGradient>
+    <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dotGrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#ffffff" fill-opacity="0.12"/>
+    </pattern>
+    <clipPath id="cardClip">
+      <rect x="0" y="0" width="1000" height="280" rx="22"/>
+    </clipPath>
+  </defs>
+
+  <style>
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-7px); }
+    }
+    @keyframes floatAlt {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(7px); }
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 0.7; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.22); }
+    }
+    @keyframes flowDash {
+      from { stroke-dashoffset: 48; }
+      to { stroke-dashoffset: 0; }
+    }
+    @keyframes beamSweep {
+      0% { transform: translateX(-420px); opacity: 0; }
+      25% { opacity: 0.85; }
+      75% { opacity: 0.85; }
+      100% { transform: translateX(1020px); opacity: 0; }
+    }
+    .chip-a { animation: floatSlow 4.2s ease-in-out infinite; }
+    .chip-b { animation: floatAlt 4.8s ease-in-out infinite; }
+    .chip-c { animation: floatSlow 5.4s ease-in-out infinite; }
+    .chip-d { animation: floatAlt 4.5s ease-in-out infinite; }
+    .flow-line { stroke-dasharray: 6 6; animation: flowDash 1.6s linear infinite; }
+    .beam { animation: beamSweep 5.5s ease-in-out infinite; }
+    .pulse-ring { transform-box: fill-box; transform-origin: center; animation: pulseDot 2.4s ease-in-out infinite; }
+    .font-sans { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+
+  <g clip-path="url(#cardClip)">
+    <!-- Base gradient + architectural dot grid -->
+    <rect width="1000" height="280" fill="url(#bgGrad)"/>
+    <rect width="1000" height="280" fill="url(#dotGrid)"/>
+
+    <!-- Ambient glowing orbs -->
+    <circle cx="190" cy="60" r="190" fill="url(#glow1)"/>
+    <circle cx="840" cy="220" r="180" fill="url(#glow2)"/>
+
+    <!-- Animated horizontal shimmer beam -->
+    <rect class="beam" x="0" y="0" width="320" height="4" fill="url(#beamGrad)"/>
+
+    <!-- Decorative animated connector paths -->
+    <path class="flow-line" d="M 80 218 C 220 218, 250 186, 370 186" fill="none" stroke="#38bdf8" stroke-width="2" stroke-opacity="0.45"/>
+    <path class="flow-line" d="M 630 186 C 740 186, 780 218, 920 218" fill="none" stroke="#f97316" stroke-width="2" stroke-opacity="0.5"/>
+
+    <!-- Left floating token chips -->
+    <g class="chip-a" transform="translate(52, 56)">
+      <rect width="84" height="52" rx="11" fill="#1e293b" fill-opacity="0.88" stroke="#38bdf8" stroke-width="1.6"/>
+      <text x="42" y="25" text-anchor="middle" fill="#e0f2fe" font-size="14" font-weight="700" class="font-mono">the</text>
+      <rect x="1" y="33" width="82" height="18" rx="4" fill="#0369a1" fill-opacity="0.45"/>
+      <text x="42" y="46" text-anchor="middle" fill="#7dd3fc" font-size="10.5" font-weight="700" class="font-mono">ID 1</text>
+    </g>
+
+    <g class="chip-b" transform="translate(116, 134)">
+      <rect width="94" height="52" rx="11" fill="#1e293b" fill-opacity="0.88" stroke="#a78bfa" stroke-width="1.6"/>
+      <text x="47" y="25" text-anchor="middle" fill="#ede9fe" font-size="14" font-weight="700" class="font-mono">cat</text>
+      <rect x="1" y="33" width="92" height="18" rx="4" fill="#6d28d9" fill-opacity="0.45"/>
+      <text x="47" y="46" text-anchor="middle" fill="#ddd6fe" font-size="10.5" font-weight="700" class="font-mono">ID 4</text>
+    </g>
+
+    <g class="chip-c" transform="translate(44, 198)">
+      <rect width="102" height="48" rx="11" fill="#451a03" fill-opacity="0.82" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 3"/>
+      <text x="51" y="23" text-anchor="middle" fill="#fef3c7" font-size="13" font-weight="700" class="font-mono">r ##o ##c</text>
+      <text x="51" y="40" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700" class="font-mono">ID 0 · [UNK]</text>
+    </g>
+
+    <!-- Right floating 3D mini scatter visualization -->
+    <g class="chip-d" transform="translate(796, 48)">
+      <rect width="160" height="154" rx="16" fill="#0f172a" fill-opacity="0.72" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1.2"/>
+      <!-- 3D axes -->
+      <line x1="36" y1="116" x2="132" y2="116" stroke="#64748b" stroke-width="1.2"/>
+      <line x1="36" y1="116" x2="36" y2="28" stroke="#64748b" stroke-width="1.2"/>
+      <line x1="36" y1="116" x2="72" y2="86" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <!-- Cluster dots -->
+      <circle cx="62" cy="56" r="5" fill="#38bdf8"/>
+      <circle cx="75" cy="64" r="5" fill="#818cf8"/>
+      <circle cx="116" cy="96" r="5" fill="#c084fc"/>
+      <circle cx="126" cy="86" r="5" fill="#f472b6"/>
+      <circle cx="96" cy="48" r="4.5" fill="#34d399"/>
+      <!-- Highlighted bigger orange dot -->
+      <circle class="pulse-ring" cx="68" cy="44" r="11" fill="#f97316" fill-opacity="0.28"/>
+      <circle cx="68" cy="44" r="6.5" fill="#f97316" stroke="#fff7ed" stroke-width="1.6"/>
+      <text x="80" y="138" text-anchor="middle" fill="#cbd5e1" font-size="10.5" font-weight="700" class="font-mono">3D EMBEDDINGS</text>
+    </g>
+
+    <!-- Center hero badge + title + subtitle -->
+    <g transform="translate(500, 0)">
+      <rect x="-126" y="34" width="252" height="28" rx="14" fill="#ffffff" fill-opacity="0.1" stroke="#38bdf8" stroke-opacity="0.45"/>
+      <circle class="pulse-ring" cx="-106" cy="48" r="4.5" fill="#38bdf8"/>
+      <text x="6" y="52" text-anchor="middle" fill="#bae6fd" font-size="11.5" font-weight="700" letter-spacing="1.4" class="font-sans">INTERACTIVE TEACHING LAB</text>
+
+      <text x="0" y="122" text-anchor="middle" fill="url(#titleGrad)" font-size="44" font-weight="800" letter-spacing="-1.2" class="font-sans">LLM Pipeline Explorer</text>
+
+      <text x="0" y="156" text-anchor="middle" fill="#cbd5e1" font-size="16" font-weight="500" class="font-sans">
+        From raw text to tokens, subwords &amp; 3D vector embeddings — in one HTML file.
+      </text>
+
+      <!-- Bottom stage pills -->
+      <g transform="translate(-235, 192)">
+        <rect x="0" y="0" width="136" height="32" rx="16" fill="#4f46e5" fill-opacity="0.32" stroke="#818cf8" stroke-opacity="0.6"/>
+        <text x="68" y="20" text-anchor="middle" fill="#e0e7ff" font-size="12" font-weight="700" class="font-sans">01 Tokenizer</text>
+
+        <text x="155" y="21" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="700" class="font-sans">→</text>
+
+        <rect x="174" y="0" width="144" height="32" rx="16" fill="#7c3aed" fill-opacity="0.32" stroke="#c084fc" stroke-opacity="0.6"/>
+        <text x="246" y="20" text-anchor="middle" fill="#f3e8ff" font-size="12" font-weight="700" class="font-sans">02 3D Embeddings</text>
+
+        <text x="336" y="21" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="700" class="font-sans">→</text>
+
+        <rect x="354" y="0" width="118" height="32" rx="16" fill="#ea580c" fill-opacity="0.32" stroke="#fb923c" stroke-opacity="0.7"/>
+        <text x="413" y="20" text-anchor="middle" fill="#ffedd5" font-size="12" font-weight="700" class="font-sans">03 Live Test</text>
+      </g>
+    </g>
+
+    <!-- Subtle outer inner-border -->
+    <rect x="1" y="1" width="998" height="278" rx="21" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5"/>
+  </g>
+</svg>

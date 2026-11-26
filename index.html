@@ -1,0 +1,2787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>LLM Pipeline Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
+  <style>
+    /* Light theme design tokens */
+    :root {
+      color-scheme: light;
+      --bg-page: #f7f8fc;
+      --bg-card: rgba(255, 255, 255, 0.92);
+      --bg-card-solid: #ffffff;
+      --bg-subtle: #f4f6fb;
+      --bg-input: #fcfdff;
+      --border: #d5dce8;
+      --border-soft: rgba(15, 23, 42, 0.08);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --brand: #4f46e5;
+      --brand-2: #0ea5e9;
+      --brand-3: #7c3aed;
+      --brand-orange: #f97316;
+      --brand-orange-dark: #ea580c;
+      --brand-hover: #4338ca;
+      --brand-text: #ffffff;
+      --unk-bg: #fef3c7;
+      --unk-text: #92400e;
+      --unk-border: #f59e0b;
+      --punct-bg: #e0f2fe;
+      --punct-text: #0369a1;
+      --radius: 22px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --shadow-card:
+        inset 0 1px 0 rgba(255, 255, 255, 0.95),
+        0 1px 3px rgba(15, 23, 42, 0.05),
+        0 18px 42px -18px rgba(30, 41, 59, 0.14),
+        0 8px 24px -12px rgba(79, 70, 229, 0.10);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.58;
+      color: var(--text-main);
+      accent-color: var(--brand);
+      -webkit-font-smoothing: antialiased;
+      /* Soft studio porcelain mesh + crisp architectural dot grid */
+      background-color: var(--bg-page);
+      background-image:
+        radial-gradient(circle at 10% 6%, rgba(99, 102, 241, 0.14), transparent 34%),
+        radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.13), transparent 34%),
+        radial-gradient(circle at 82% 84%, rgba(249, 115, 22, 0.10), transparent 36%),
+        radial-gradient(circle at 18% 72%, rgba(124, 58, 237, 0.09), transparent 36%),
+        radial-gradient(rgba(15, 23, 42, 0.075) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 26px 26px;
+      background-attachment: fixed;
+    }
+
+    /* Centred page wrapper, max width 1000px */
+    .container {
+      max-width: 1000px;
+      margin-inline: auto;
+      padding: 40px 20px 72px;
+    }
+
+    /* Skip link for keyboard navigation */
+    .skip-link:where(:not(:focus-within, :active)) {
+      position: absolute !important;
+      clip-path: inset(50%) !important;
+      overflow: hidden !important;
+      width: 1px !important;
+      height: 1px !important;
+      margin: -1px !important;
+      padding: 0 !important;
+      border: 0 !important;
+      white-space: nowrap !important;
+    }
+
+    .skip-link:focus-visible {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 100;
+      padding: 10px 16px;
+      background: var(--brand);
+      color: var(--brand-text);
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* Hero header */
+    .page-header {
+      text-align: center;
+      margin-bottom: 34px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      margin-bottom: 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(79, 70, 229, 0.22);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.08);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--brand);
+    }
+
+    .eyebrow-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+    }
+
+    .page-header h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 2.85rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.12;
+      color: var(--text-main);
+      background: linear-gradient(110deg, #0f172a 0%, #3730a3 48%, #0284c7 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .page-header p {
+      margin: 0 auto 20px;
+      max-width: 60ch;
+      color: var(--text-muted);
+      font-size: 1.02rem;
+    }
+
+    /* Visual pipeline trail */
+    .pipeline-steps {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-soft);
+      border-radius: 999px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .pipeline-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .pipeline-chip.alt {
+      background: #f3e8ff;
+      color: #6b21a8;
+    }
+
+    .pipeline-chip.warm {
+      background: #ffedd5;
+      color: #9a3412;
+    }
+
+    .pipeline-arrow {
+      color: #94a3b8;
+      font-weight: 700;
+    }
+
+    /* Main stacked layout */
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Visual connector showing data flowing from Part 1 to Part 2 */
+    .pipeline-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 0;
+      user-select: none;
+    }
+
+    .connector-line {
+      width: 2px;
+      height: 18px;
+      background: linear-gradient(180deg, rgba(79, 70, 229, 0.35), rgba(124, 58, 237, 0.45));
+    }
+
+    .connector-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(124, 58, 237, 0.22);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      color: #4c1d95;
+    }
+
+    .card-subtitle {
+      margin: 4px 0 0;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Elevated glass cards */
+    .card {
+      position: relative;
+      overflow: hidden;
+      background-color: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      outline: 1px solid var(--border-soft);
+      border-radius: var(--radius);
+      padding: 28px 30px;
+      box-shadow: var(--shadow-card);
+    }
+
+    /* Colorful top accent bar on each part card */
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+    }
+
+    .card.part-2::before {
+      background: linear-gradient(90deg, var(--brand-3), #ec4899, var(--brand-2));
+    }
+
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 22px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .part-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #4f46e5, #0284c7);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+
+    .card.part-2 .part-badge {
+      background: linear-gradient(135deg, #7c3aed, #db2777);
+      box-shadow: 0 4px 10px rgba(124, 58, 237, 0.25);
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .stage-pill {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 11px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+
+    .stage-pill.pending {
+      background: #f1f5f9;
+      color: #475569;
+      border-color: #cbd5e1;
+    }
+
+    /* Form fields */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    label,
+    legend {
+      font-weight: 700;
+      font-size: 0.94rem;
+      color: var(--text-main);
+    }
+
+    textarea,
+    input[type="text"] {
+      width: 100%;
+      padding: 13px 15px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.93rem;
+      line-height: 1.6;
+      color: var(--text-main);
+      background-color: var(--bg-input);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.03);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    textarea:hover,
+    input[type="text"]:hover {
+      border-color: #818cf8;
+      background-color: #ffffff;
+    }
+
+    textarea:focus,
+    input[type="text"]:focus {
+      border-color: var(--brand);
+      background-color: #ffffff;
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.14);
+    }
+
+    /* Accessible custom focus rings */
+    :where(a, button, input, textarea, [tabindex="0"]):focus-visible {
+      outline: 3px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    /* Action buttons */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .actions:last-child {
+      margin-bottom: 0;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-block-size: 44px;
+      padding: 10px 22px;
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--brand-text);
+      background: linear-gradient(135deg, #4f46e5 0%, #2563eb 55%, #0284c7 100%);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      box-shadow:
+        0 6px 16px -4px rgba(79, 70, 229, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+
+    button:hover {
+      filter: brightness(1.06);
+      box-shadow:
+        0 10px 22px -4px rgba(79, 70, 229, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 10px -2px rgba(79, 70, 229, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+      transform: none;
+      filter: none;
+    }
+
+    .card.part-2 button {
+      background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+      box-shadow:
+        0 6px 16px -4px rgba(124, 58, 237, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    /* Stage 2 vocabulary output box */
+    .vocab-output {
+      margin-top: 8px;
+      padding: 18px 20px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+      border: 1px solid rgba(79, 70, 229, 0.18);
+    }
+
+    .vocab-stats {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .stat-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      color: #312e81;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .stat-badge.secondary {
+      background: #f0f9ff;
+      border-color: #bae6fd;
+      color: #075985;
+    }
+
+    .stat-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1rem;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: #ffffff;
+      color: var(--brand);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+
+    .vocab-empty-msg {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+
+    /* Stage 6 "Words kept: N of TOTAL" slider panel */
+    .vocab-slider-box {
+      margin-bottom: 14px;
+      padding: 13px 16px;
+      border-radius: var(--radius-sm);
+      background: #ffffff;
+      border: 1.5px solid #c7d2fe;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.06);
+    }
+
+    .vocab-slider-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .vocab-slider-header label {
+      font-size: 0.94rem;
+      font-weight: 700;
+      color: #1e1b4b;
+    }
+
+    .vocab-slider-count {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 800;
+      color: var(--brand);
+    }
+
+    .vocab-slider-hint {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .vocab-slider-box input[type="range"] {
+      width: 100%;
+      margin: 2px 0 0;
+      cursor: pointer;
+      accent-color: var(--brand);
+    }
+
+    /* Fallback range slider styling for browsers without accent-color support */
+    @supports not (accent-color: #4f46e5) {
+      .vocab-slider-box input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        height: 24px;
+      }
+
+      .vocab-slider-box input[type="range"]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        background: linear-gradient(
+          to right,
+          var(--brand) var(--progress, 100%),
+          #cbd5e1 var(--progress, 100%)
+        );
+      }
+
+      .vocab-slider-box input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        margin-top: -5px;
+        border-radius: 50%;
+        background: var(--brand);
+        border: 2px solid #ffffff;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+        cursor: pointer;
+      }
+
+      .vocab-slider-box input[type="range"]::-moz-range-track {
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        background: #cbd5e1;
+      }
+
+      .vocab-slider-box input[type="range"]::-moz-range-progress {
+        height: 8px;
+        border-radius: 999px;
+        background: var(--brand);
+      }
+
+      .vocab-slider-box input[type="range"]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--brand);
+        border: 2px solid #ffffff;
+        cursor: pointer;
+      }
+    }
+
+    /* Scrollable accessible table container */
+    .table-wrapper {
+      overflow: auto;
+      max-inline-size: 100%;
+      max-block-size: 300px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card-solid);
+      box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.04);
+      container-type: inline-size;
+    }
+
+    .vocab-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.92rem;
+    }
+
+    .vocab-table caption {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .vocab-table thead {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 1;
+    }
+
+    .vocab-table th {
+      text-align: left;
+      padding: 11px 16px;
+      background: #eef2ff;
+      color: #1e1b4b;
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid #c7d2fe;
+    }
+
+    .vocab-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid #eef2f7;
+      vertical-align: middle;
+    }
+
+    .vocab-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .vocab-table tbody tr:hover {
+      background-color: #f8faff;
+    }
+
+    .vocab-table tbody tr.unk-row {
+      background-color: #fffbeb;
+    }
+
+    .vocab-table tbody tr.unk-row:hover {
+      background-color: #fef3c7;
+    }
+
+    .id-pill {
+      display: inline-block;
+      min-width: 34px;
+      text-align: center;
+      padding: 3px 9px;
+      border-radius: 7px;
+      background: #f1f5f9;
+      color: #334155;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 700;
+      font-size: 0.86rem;
+    }
+
+    .unk-row .id-pill {
+      background: var(--unk-bg);
+      color: var(--unk-text);
+      border: 1px solid #fcd34d;
+    }
+
+    .token-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 8px;
+      background: #eef2ff;
+      color: #312e81;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .token-chip.unk {
+      background: var(--unk-bg);
+      color: var(--unk-text);
+      border: 1px solid var(--unk-border);
+    }
+
+    .token-chip.punct {
+      background: var(--punct-bg);
+      color: var(--punct-text);
+      border: 1px solid #7dd3fc;
+    }
+
+    .token-note {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-left: 6px;
+    }
+
+    .count-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .count-number {
+      min-width: 24px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .count-bar-track {
+      flex: 1;
+      max-width: 150px;
+      height: 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .count-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+    }
+
+    /* Stage 3 tokenizer output area */
+    .tokenize-output {
+      margin-top: 8px;
+      padding: 18px 20px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+      border: 1px solid rgba(79, 70, 229, 0.18);
+    }
+
+    .tokenize-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .stat-badge.accent {
+      background: #f5f3ff;
+      border-color: #ddd6fe;
+      color: #4c1d95;
+    }
+
+    .token-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .token-chip-card {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 62px;
+      border-radius: 12px;
+      border: 2px solid var(--chip-border, #818cf8);
+      background-color: var(--chip-bg, #eef2ff);
+      color: var(--chip-text, #1e1b4b);
+      overflow: hidden;
+      box-shadow: 0 3px 10px -4px rgba(15, 23, 42, 0.16);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .token-chip-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px -6px rgba(15, 23, 42, 0.22);
+    }
+
+    .token-chip-card.is-unknown {
+      border-style: dashed;
+    }
+
+    .token-chip-word {
+      padding: 8px 13px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: pre;
+    }
+
+    .token-chip-id {
+      width: 100%;
+      text-align: center;
+      padding: 4px 10px;
+      background-color: var(--chip-id-bg, #e0e7ff);
+      border-top: 1px solid var(--chip-border, #818cf8);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .unknown-note {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 0 0;
+      padding: 11px 15px;
+      border-radius: var(--radius-sm);
+      background-color: #fffbeb;
+      border: 1.5px dashed var(--unk-border);
+      color: var(--unk-text);
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    .unknown-note[hidden] {
+      display: none;
+    }
+
+    .unknown-note-tag {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #fde68a;
+      color: #78350f;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* Divider inside Part 1 */
+    .subsection-divider {
+      border: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 26px 0;
+    }
+
+    /* Sleek radio cards */
+    fieldset.radio-group {
+      margin: 0 0 18px;
+      padding: 16px 18px;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #faf5ff 0%, #f8fafc 100%);
+    }
+
+    fieldset.radio-group legend {
+      padding: 0 8px;
+    }
+
+    .radio-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .radio-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-block-size: 42px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      background-color: var(--bg-card-solid);
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .radio-option:hover {
+      border-color: #a855f7;
+    }
+
+    .radio-option:has(input:checked) {
+      border-color: #7c3aed;
+      background-color: #f5f3ff;
+      color: #4c1d95;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.14);
+    }
+
+    .radio-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    /* Fallback radio styling for older browsers without accent-color support */
+    @supports not (accent-color: #4f46e5) {
+      .radio-option {
+        position: relative;
+        padding-left: 40px;
+      }
+
+      .radio-option input[type="radio"] {
+        position: absolute;
+        clip-path: inset(50%);
+        overflow: hidden;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        border: 0;
+        white-space: nowrap;
+      }
+
+      .radio-option input[type="radio"] + span::before {
+        content: "";
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border);
+        border-radius: 50%;
+        background-color: var(--bg-card-solid);
+      }
+
+      .radio-option input[type="radio"]:checked + span::before {
+        border-color: #7c3aed;
+      }
+
+      .radio-option input[type="radio"]:checked + span::after {
+        content: "";
+        position: absolute;
+        left: 19px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #7c3aed;
+      }
+
+      .radio-option input[type="radio"]:focus-visible + span::before {
+        outline: 3px solid var(--brand);
+        outline-offset: 2px;
+      }
+    }
+
+    /* Stage 5 model download progress bar */
+    .progress-box {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%);
+      border: 1.5px solid #c4b5fd;
+    }
+
+    .progress-box[hidden] {
+      display: none;
+    }
+
+    .progress-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #4c1d95;
+    }
+
+    .progress-percent {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #6d28d9;
+    }
+
+    .progress-box progress {
+      width: 100%;
+      height: 12px;
+      display: block;
+      accent-color: #7c3aed;
+    }
+
+    /* Fallback styling for <progress> in browsers without accent-color support */
+    @supports not (accent-color: #7c3aed) {
+      .progress-box progress {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        border: none;
+        background-color: #e2e8f0;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .progress-box progress::-webkit-progress-bar {
+        background-color: #e2e8f0;
+        border-radius: 999px;
+      }
+
+      .progress-box progress::-webkit-progress-value {
+        background-color: #7c3aed;
+        border-radius: 999px;
+      }
+
+      .progress-box progress::-moz-progress-bar {
+        background-color: #7c3aed;
+        border-radius: 999px;
+      }
+    }
+
+    /* Stage 5 Closest pairs table panel */
+    .pairs-panel {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #faf5ff 0%, #ffffff 100%);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+
+    .pairs-panel[hidden] {
+      display: none;
+    }
+
+    .pairs-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .pairs-header h3 {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .pairs-meta {
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f3e8ff;
+      color: #6b21a8;
+      border: 1px solid #d8b4fe;
+    }
+
+    .score-pill {
+      display: inline-block;
+      min-width: 64px;
+      text-align: center;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: #f3e8ff;
+      color: #581c87;
+      border: 1px solid #d8b4fe;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    /* Tabular numbers across stats, IDs, and counts for crisp alignment */
+    .id-pill,
+    .count-number,
+    .stat-value,
+    .vocab-slider-count,
+    .progress-percent {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Stage 7 "Try your own word or sentence" studio panel */
+    .try-own-panel {
+      margin-top: 26px;
+      padding: 22px 24px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(160deg, #fffaf5 0%, #ffffff 55%, #fff7ed 100%);
+      border: 1.5px solid rgba(249, 115, 22, 0.34);
+      box-shadow: 0 10px 28px -14px rgba(234, 88, 12, 0.18);
+    }
+
+    .try-own-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .try-own-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .orange-dot-badge {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--brand-orange);
+      border: 2px solid #9a3412;
+      box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.2);
+      flex-shrink: 0;
+    }
+
+    .try-own-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .try-own-badge {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 11px;
+      border-radius: 999px;
+      background: #ffedd5;
+      color: #9a3412;
+      border: 1px solid #fdba74;
+    }
+
+    .try-own-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .try-own-row input[type="text"] {
+      flex: 1 1 280px;
+      border-color: #fdba74;
+      background-color: #ffffff;
+    }
+
+    .try-own-row input[type="text"]:focus {
+      border-color: var(--brand-orange-dark);
+      box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.16);
+    }
+
+    .card.part-2 button.btn-orange {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      box-shadow:
+        0 6px 16px -4px rgba(234, 88, 12, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      white-space: nowrap;
+    }
+
+    .custom-results {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .custom-results[hidden] {
+      display: none;
+    }
+
+    .custom-subcard {
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(15, 23, 42, 0.09);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .custom-subcard-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .custom-subcard-title {
+      margin: 0;
+      font-size: 0.84rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #475569;
+    }
+
+    .custom-subcard-meta {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    /* First 8 vector numbers mini-grid */
+    .vector-grid {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .vector-tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 6px 8px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+
+    .vector-tile.positive {
+      background: #f0f9ff;
+      border-color: #bae6fd;
+    }
+
+    .vector-tile.negative {
+      background: #fff7ed;
+      border-color: #fed7aa;
+    }
+
+    .vector-index {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .vector-val {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .vector-bar-track {
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .vector-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #4f46e5, #0ea5e9);
+    }
+
+    .vector-tile.negative .vector-bar-fill {
+      background: linear-gradient(90deg, #f97316, #fb7185);
+    }
+
+    /* 3 closest sentences list */
+    .neighbor-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .neighbor-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .neighbor-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1 1 240px;
+    }
+
+    .neighbor-rank {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #ffedd5;
+      color: #9a3412;
+      border: 1px solid #fdba74;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 800;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .neighbor-text {
+      font-size: 0.94rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .neighbor-score-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .score-pill.orange {
+      background: #ffedd5;
+      color: #9a3412;
+      border-color: #fdba74;
+    }
+
+    @media (max-width: 720px) {
+      .vector-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    /* Stage 4 inline message banner for warnings or mode notes */
+    .embed-message {
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background-color: #fff7ed;
+      border: 1.5px solid #fb923c;
+      color: #9a3412;
+      font-size: 0.93rem;
+      font-weight: 600;
+    }
+
+    .embed-message.info {
+      background-color: #f5f3ff;
+      border-color: #c4b5fd;
+      color: #5b21b6;
+    }
+
+    .embed-message[hidden] {
+      display: none;
+    }
+
+    /* Empty 520px tall 3D chart viewport in Part 2 */
+    .chart-area {
+      height: 520px;
+      width: 100%;
+      margin-top: 18px;
+      border: 2px dashed rgba(124, 58, 237, 0.32);
+      border-radius: var(--radius-md);
+      background-color: #fafaff;
+      background-image:
+        linear-gradient(rgba(124, 58, 237, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124, 58, 237, 0.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      overflow: hidden;
+    }
+
+    /* Clean frame once the live 3D Plotly chart is rendered inside */
+    .chart-area.has-plot {
+      display: block;
+      padding: 0;
+      border: 1.5px solid rgba(124, 58, 237, 0.24);
+      background: #ffffff;
+      box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.04);
+    }
+
+    .chart-placeholder-pill {
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid rgba(124, 58, 237, 0.22);
+      color: #6d28d9;
+      font-size: 0.84rem;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08);
+    }
+
+    /* Respect reduced motion preferences */
+    @media (prefers-reduced-motion: reduce) {
+      button,
+      textarea,
+      input[type="text"],
+      .radio-option,
+      .token-chip-card {
+        transition: none;
+      }
+    }
+
+    /* Comfortable touch targets on touch screens */
+    @media (pointer: coarse) {
+      button,
+      .radio-option {
+        min-block-size: 46px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .card {
+        padding: 22px 18px;
+      }
+
+      .count-bar-track {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="container">
+    <header class="page-header">
+      <div class="eyebrow">
+        <span class="eyebrow-dot" aria-hidden="true"></span>
+        Interactive Teaching Lab
+      </div>
+      <h1 id="main-content" tabindex="-1">LLM Pipeline Explorer</h1>
+      <p>Watch raw sentences turn into token IDs and explore how words and meanings cluster in 3D space.</p>
+      <div class="pipeline-steps" aria-hidden="true">
+        <span class="pipeline-chip">01 Tokenizer</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-chip alt">02 Embeddings in 3D</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-chip warm">03 Try Your Own</span>
+      </div>
+    </header>
+
+    <main>
+      <!-- Part 1: Tokenizer -->
+      <section class="card part-1">
+        <div class="card-header">
+          <div>
+            <div class="card-title-group">
+              <span class="part-badge">Part 1</span>
+              <h2>Tokenizer</h2>
+            </div>
+            <p class="card-subtitle">Learn how text is split into vocabulary pieces and converted into integer IDs.</p>
+          </div>
+          <span class="stage-pill">Stage 6 Active</span>
+        </div>
+
+        <div class="field-group">
+          <label for="training-sentences">Training sentences</label>
+          <textarea id="training-sentences" rows="6">The cat sat on the mat.
+The dog ran in the park.
+A bird sang in the tree.
+The sun is warm today.
+A small frog jumped on the log.
+The cat and the dog like to play.</textarea>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="build-vocab-btn">Build vocabulary</button>
+        </div>
+
+        <!-- Stage 2 vocabulary output area -->
+        <div class="vocab-output" id="vocab-output">
+          <p class="vocab-empty-msg" id="vocab-empty-msg">
+            Click <strong>Build vocabulary</strong> to split the training sentences into tokens and assign IDs.
+          </p>
+
+          <div id="vocab-results" hidden>
+            <div class="vocab-stats" aria-live="polite">
+              <div class="stat-group">
+                <div class="stat-badge">
+                  Vocabulary size
+                  <span class="stat-value" id="vocab-size-value">0</span>
+                </div>
+                <div class="stat-badge secondary">
+                  Total tokens counted
+                  <span class="stat-value" id="total-tokens-value">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stage 6 slider: keep only the top N most frequent words -->
+            <div class="vocab-slider-box" id="vocab-slider-box">
+              <div class="vocab-slider-header">
+                <label for="vocab-limit-slider">
+                  Words kept: <span class="vocab-slider-count" id="vocab-limit-label">0 of 0</span>
+                </label>
+                <span class="vocab-slider-hint">Drag to shrink or grow the vocabulary live</span>
+              </div>
+              <input
+                type="range"
+                id="vocab-limit-slider"
+                min="0"
+                max="0"
+                value="0"
+                step="1"
+              >
+            </div>
+
+            <div tabindex="0" role="region" aria-labelledby="vocab-table-caption" class="table-wrapper">
+              <table class="vocab-table">
+                <caption id="vocab-table-caption">Vocabulary table sorted by frequency (most frequent first)</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">token</th>
+                    <th scope="col">count</th>
+                  </tr>
+                </thead>
+                <tbody id="vocab-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <hr class="subsection-divider">
+
+        <div class="field-group">
+          <label for="encode-sentence">Encode a sentence</label>
+          <input
+            type="text"
+            id="encode-sentence"
+            value="The cat sat on the rocket."
+          >
+        </div>
+
+        <div class="actions">
+          <button type="button" id="tokenize-btn">Tokenize</button>
+        </div>
+
+        <!-- Stage 3 tokenized chips and stats output area -->
+        <div class="tokenize-output" id="tokenize-output">
+          <p class="vocab-empty-msg" id="tokenize-empty-msg">
+            Click <strong>Tokenize</strong> to turn the sentence above into coloured token chips and IDs.
+          </p>
+
+          <div id="tokenize-results" hidden>
+            <div class="tokenize-stats" aria-live="polite">
+              <div class="stat-badge">
+                Characters
+                <span class="stat-value" id="char-count-value">0</span>
+              </div>
+              <div class="stat-badge secondary">
+                Tokens
+                <span class="stat-value" id="token-count-value">0</span>
+              </div>
+              <div class="stat-badge accent">
+                Characters per token
+                <span class="stat-value" id="chars-per-token-value">0.00</span>
+              </div>
+            </div>
+
+            <div id="token-chips" class="token-chips"></div>
+
+            <p id="unknown-note" class="unknown-note" hidden>
+              <span class="unknown-note-tag">Subword split</span>
+              <span>Note: unknown words are broken into smaller pieces</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Visual connector between Part 1 and Part 2 -->
+      <div class="pipeline-connector" aria-hidden="true">
+        <span class="connector-line"></span>
+        <span class="connector-pill">Text &rarr; Tokens &rarr; Vectors in 3D Space</span>
+        <span class="connector-line"></span>
+      </div>
+
+      <!-- Part 2: Embeddings in 3D -->
+      <section class="card part-2">
+        <div class="card-header">
+          <div>
+            <div class="card-title-group">
+              <span class="part-badge">Part 2</span>
+              <h2>Embeddings in 3D</h2>
+            </div>
+            <p class="card-subtitle">Turn sentences into lists of numbers, compare cosine similarity, and explore them in 3D.</p>
+          </div>
+          <span class="stage-pill">Stage 7 Active</span>
+        </div>
+
+        <div class="field-group">
+          <label for="embedding-sentences">Sentences (one per line)</label>
+          <textarea id="embedding-sentences" rows="8">The cat sat on the mat.
+A kitten rested on the rug.
+The bat sat on the mat.
+I love programming in Python.
+Coding in Python is my passion.
+Pythons are large snakes.
+The stock market crashed today.
+Share prices fell sharply.</textarea>
+        </div>
+
+        <fieldset class="radio-group">
+          <legend>Embedding method</legend>
+          <div class="radio-options">
+            <label class="radio-option" for="mode-spelling">
+              <input type="radio" id="mode-spelling" name="embedding-mode" value="spelling" checked>
+              <span>Spelling-based</span>
+            </label>
+            <label class="radio-option" for="mode-meaning">
+              <input type="radio" id="mode-meaning" name="embedding-mode" value="meaning">
+              <span>Meaning-based</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="button" id="embed-plot-btn">Embed and plot</button>
+        </div>
+
+        <div id="model-progress-box" class="progress-box" hidden>
+          <div class="progress-header">
+            <label for="model-progress-bar" id="model-progress-text">Downloading meaning model...</label>
+            <span class="progress-percent" id="model-progress-percent">0%</span>
+          </div>
+          <progress id="model-progress-bar" max="100" value="0">0%</progress>
+        </div>
+
+        <div id="embed-message" class="embed-message" role="status" aria-live="polite" hidden></div>
+
+        <div id="chart-area" class="chart-area">
+          <span class="chart-placeholder-pill">3D Chart Viewport · 520px</span>
+          <span>Click <strong>Embed and plot</strong> to project your sentences into 3D space.</span>
+        </div>
+
+        <!-- Stage 5 Closest pairs table -->
+        <div id="pairs-panel" class="pairs-panel" hidden>
+          <div class="pairs-header">
+            <h3>Closest pairs</h3>
+            <span class="pairs-meta" id="pairs-meta">Top 5 by cosine similarity</span>
+          </div>
+          <div tabindex="0" role="region" aria-labelledby="pairs-table-caption" class="table-wrapper">
+            <table class="vocab-table">
+              <caption id="pairs-table-caption">Closest pairs — 5 most similar sentence pairs using cosine similarity on full embeddings</caption>
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Sentence A</th>
+                  <th scope="col">Sentence B</th>
+                  <th scope="col">Cosine similarity</th>
+                </tr>
+              </thead>
+              <tbody id="pairs-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stage 7: Try your own word or sentence -->
+        <div class="try-own-panel" id="try-own-panel">
+          <div class="try-own-header">
+            <div class="try-own-title-wrap">
+              <span class="orange-dot-badge" aria-hidden="true"></span>
+              <h3>End-to-End Live Test</h3>
+            </div>
+            <span class="try-own-badge">Plotted as a bigger orange dot</span>
+          </div>
+
+          <div class="field-group">
+            <label for="custom-sentence-input">Try your own word or sentence</label>
+            <div class="try-own-row">
+              <input
+                type="text"
+                id="custom-sentence-input"
+                placeholder="e.g. A puppy napped on the carpet."
+              >
+              <button type="button" id="try-own-btn" class="btn-orange">
+                Tokenize, embed &amp; add to plot
+              </button>
+            </div>
+          </div>
+
+          <div id="custom-message" class="embed-message" role="status" aria-live="polite" hidden></div>
+
+          <div id="custom-results" class="custom-results" hidden>
+            <div class="custom-subcard">
+              <div class="custom-subcard-header">
+                <h4 class="custom-subcard-title">1. Token chips</h4>
+                <span class="custom-subcard-meta" id="custom-tokens-meta"></span>
+              </div>
+              <div id="custom-token-chips" class="token-chips"></div>
+              <p id="custom-unknown-note" class="unknown-note" hidden>
+                <span class="unknown-note-tag">Subword split</span>
+                <span>Note: unknown words are broken into smaller pieces</span>
+              </p>
+            </div>
+
+            <div class="custom-subcard">
+              <div class="custom-subcard-header">
+                <h4 class="custom-subcard-title">2. First 8 numbers of its vector</h4>
+                <span class="custom-subcard-meta" id="custom-vector-meta"></span>
+              </div>
+              <div id="custom-vector-grid" class="vector-grid"></div>
+            </div>
+
+            <div class="custom-subcard">
+              <div class="custom-subcard-header">
+                <h4 class="custom-subcard-title">3. 3 closest sentences</h4>
+                <span class="custom-subcard-meta" id="custom-neighbors-meta">Ranked by full-vector cosine similarity</span>
+              </div>
+              <ol id="custom-neighbors-list" class="neighbor-list" role="list"></ol>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // WHAT THIS DOES: Stores the full sorted training tokens and the currently kept vocabulary
+    // so both the slider (Stage 6) and the tokenizer (Stage 3) stay in sync.
+    let fullSortedEntries = [];
+    let totalTrainingTokens = 0;
+    let vocabularyList = [];
+    let tokenToId = {};
+    let hasTokenizedSentence = false;
+
+    // WHAT THIS DOES: Grabs the HTML elements on the page that Stages 2 & 6 need to read from and update.
+    const trainingInput = document.getElementById("training-sentences");
+    const buildVocabButton = document.getElementById("build-vocab-btn");
+    const vocabEmptyMessage = document.getElementById("vocab-empty-msg");
+    const vocabResultsBox = document.getElementById("vocab-results");
+    const vocabSizeValue = document.getElementById("vocab-size-value");
+    const totalTokensValue = document.getElementById("total-tokens-value");
+    const vocabTableBody = document.getElementById("vocab-table-body");
+    const vocabLimitSlider = document.getElementById("vocab-limit-slider");
+    const vocabLimitLabel = document.getElementById("vocab-limit-label");
+
+    // WHAT THIS DOES: Cleans a piece of text and splits it into tokens in 3 simple steps:
+    // 1) make everything lowercase, 2) put spaces around punctuation (. , ! ? '), 3) split on spaces.
+    function splitIntoTokens(rawText) {
+      // Step 1: Make all text lowercase.
+      const lowerText = rawText.toLowerCase();
+
+      // Step 2: Put spaces around . , ! ? ' so each punctuation mark becomes its own token.
+      const spacedText = lowerText.replace(/([.,!?'])/g, " $1 ");
+
+      // Step 3: Split the text on spaces and ignore any empty pieces.
+      const tokens = spacedText
+        .trim()
+        .split(/\s+/)
+        .filter(function (piece) {
+          return piece !== "";
+        });
+
+      return tokens;
+    }
+
+    // WHAT THIS DOES: Counts how often each token appears, sorts most frequent first,
+    // and assigns IDs starting with 0 = [UNK], then 1, 2, 3...
+    function buildVocabulary(rawText) {
+      const tokens = splitIntoTokens(rawText);
+
+      // Step 4: Count how many times each word/punctuation token appears.
+      const tokenCounts = {};
+      for (const token of tokens) {
+        tokenCounts[token] = (tokenCounts[token] || 0) + 1;
+      }
+
+      // Sort tokens so the most frequent ones come first (ties sorted A to Z).
+      const sortedEntries = Object.entries(tokenCounts).sort(function (a, b) {
+        if (b[1] !== a[1]) {
+          return b[1] - a[1];
+        }
+        return a[0].localeCompare(b[0]);
+      });
+
+      // Step 5: Give IDs: 0 = [UNK] (unknown), then 1, 2, 3... for each word.
+      const builtList = [
+        { id: 0, token: "[UNK]", count: 0, isUnknown: true }
+      ];
+      const lookupMap = { "[UNK]": 0 };
+
+      sortedEntries.forEach(function (entry, index) {
+        const token = entry[0];
+        const count = entry[1];
+        const id = index + 1;
+
+        builtList.push({ id: id, token: token, count: count, isUnknown: false });
+        lookupMap[token] = id;
+      });
+
+      return {
+        sortedEntries: sortedEntries,
+        list: builtList,
+        lookup: lookupMap,
+        totalTokens: tokens.length
+      };
+    }
+
+    // WHAT THIS DOES: Keeps only the top N most frequent words from the built vocabulary,
+    // updates the table and slider label, and live re-tokenizes if a sentence was already tokenized.
+    function applyVocabularyLimit(limitN) {
+      const totalWords = fullSortedEntries.length;
+      const keptCount = Math.max(0, Math.min(totalWords, limitN));
+      const keptEntries = fullSortedEntries.slice(0, keptCount);
+
+      // Rebuild the ID list: 0 is always [UNK], followed by 1..N for the kept words.
+      const builtList = [
+        { id: 0, token: "[UNK]", count: 0, isUnknown: true }
+      ];
+      const lookupMap = { "[UNK]": 0 };
+
+      keptEntries.forEach(function (entry, index) {
+        const token = entry[0];
+        const count = entry[1];
+        const id = index + 1;
+
+        builtList.push({ id: id, token: token, count: count, isUnknown: false });
+        lookupMap[token] = id;
+      });
+
+      vocabularyList = builtList;
+      tokenToId = lookupMap;
+
+      // Update the "Words kept: N of TOTAL" label and fallback track fill percentage.
+      vocabLimitLabel.textContent = keptCount + " of " + totalWords;
+      if (!CSS.supports("accent-color", "auto")) {
+        const pct = totalWords > 0 ? Math.round((keptCount / totalWords) * 100) : 0;
+        vocabLimitSlider.style.setProperty("--progress", pct + "%");
+      }
+
+      // Redraw the vocabulary table with only the kept words.
+      renderVocabularyTable({
+        list: vocabularyList,
+        lookup: tokenToId,
+        totalTokens: totalTrainingTokens
+      });
+
+      // If the user has already tokenized a sentence, re-tokenize it immediately as they drag.
+      if (hasTokenizedSentence) {
+        const rawSentence = encodeSentenceInput.value;
+        const encodedResult = encodeSentence(rawSentence);
+        renderTokenizedResult(rawSentence, encodedResult);
+      }
+
+      // If Stage 7 is showing token chips for a custom sentence, update those live too.
+      if (lastCustomSentence !== "") {
+        const customEncoded = encodeSentence(lastCustomSentence);
+        renderTokenChipsInto(customTokenChips, customEncoded.tokens);
+        customTokensMeta.textContent = customEncoded.tokens.length + " tokens";
+        customUnknownNote.hidden = !customEncoded.hadUnknownWord;
+      }
+    }
+
+    // WHAT THIS DOES: Draws the vocabulary size and the scrollable ID | token | count table on screen.
+    function renderVocabularyTable(vocabData) {
+      vocabEmptyMessage.hidden = true;
+      vocabResultsBox.hidden = false;
+
+      // Update the summary numbers at the top of the table.
+      vocabSizeValue.textContent = vocabData.list.length;
+      totalTokensValue.textContent = vocabData.totalTokens;
+
+      // Clear any previous rows before adding the new ones.
+      vocabTableBody.textContent = "";
+
+      // Find the highest token count so we can draw a proportional mini bar for each row.
+      const maxCount = vocabData.list.length > 1 ? vocabData.list[1].count : 1;
+      const punctuationSet = new Set([".", ",", "!", "?", "'"]);
+
+      for (const item of vocabData.list) {
+        const row = document.createElement("tr");
+        if (item.isUnknown) {
+          row.className = "unk-row";
+        }
+
+        // Column 1: ID
+        const idCell = document.createElement("td");
+        const idPill = document.createElement("span");
+        idPill.className = "id-pill";
+        idPill.textContent = item.id;
+        idCell.appendChild(idPill);
+
+        // Column 2: token
+        const tokenCell = document.createElement("td");
+        const tokenChip = document.createElement("span");
+        tokenChip.className = "token-chip";
+        if (item.isUnknown) {
+          tokenChip.classList.add("unk");
+        } else if (punctuationSet.has(item.token)) {
+          tokenChip.classList.add("punct");
+        }
+        tokenChip.textContent = item.token;
+        tokenCell.appendChild(tokenChip);
+
+        if (item.isUnknown) {
+          const note = document.createElement("span");
+          note.className = "token-note";
+          note.textContent = "(unknown)";
+          tokenCell.appendChild(note);
+        }
+
+        // Column 3: count (plus a small visual bar)
+        const countCell = document.createElement("td");
+        const countWrap = document.createElement("div");
+        countWrap.className = "count-cell";
+
+        const countNumber = document.createElement("span");
+        countNumber.className = "count-number";
+        countNumber.textContent = item.count;
+        countWrap.appendChild(countNumber);
+
+        const barTrack = document.createElement("div");
+        barTrack.className = "count-bar-track";
+        barTrack.setAttribute("aria-hidden", "true");
+
+        const barFill = document.createElement("div");
+        barFill.className = "count-bar-fill";
+        const widthPercent = maxCount > 0 ? Math.round((item.count / maxCount) * 100) : 0;
+        barFill.style.width = widthPercent + "%";
+
+        barTrack.appendChild(barFill);
+        countWrap.appendChild(barTrack);
+        countCell.appendChild(countWrap);
+
+        row.appendChild(idCell);
+        row.appendChild(tokenCell);
+        row.appendChild(countCell);
+        vocabTableBody.appendChild(row);
+      }
+    }
+
+    // WHAT THIS DOES: Grabs the HTML elements on the page that Stage 3 needs to read from and update.
+    const encodeSentenceInput = document.getElementById("encode-sentence");
+    const tokenizeButton = document.getElementById("tokenize-btn");
+    const tokenizeEmptyMessage = document.getElementById("tokenize-empty-msg");
+    const tokenizeResultsBox = document.getElementById("tokenize-results");
+    const charCountValue = document.getElementById("char-count-value");
+    const tokenCountValue = document.getElementById("token-count-value");
+    const charsPerTokenValue = document.getElementById("chars-per-token-value");
+    const tokenChipsContainer = document.getElementById("token-chips");
+    const unknownNote = document.getElementById("unknown-note");
+
+    // WHAT THIS DOES: Picks a consistent colour palette from a token's ID number.
+    // Because the colour comes directly from the ID, the same word is always the exact same colour.
+    function getChipColors(id) {
+      if (id === 0) {
+        return {
+          bg: "#fef3c7",
+          border: "#f59e0b",
+          text: "#92400e",
+          idBg: "#fde68a"
+        };
+      }
+
+      // Multiply the ID by the golden angle (137.508 degrees) so nearby IDs get distinct colours.
+      const hue = Math.round((id * 137.508) % 360);
+      return {
+        bg: "hsl(" + hue + ", 88%, 94%)",
+        border: "hsl(" + hue + ", 68%, 64%)",
+        text: "hsl(" + hue + ", 62%, 24%)",
+        idBg: "hsl(" + hue + ", 82%, 86%)"
+      };
+    }
+
+    // WHAT THIS DOES: Encodes a sentence using our vocabulary.
+    // Known words keep their vocabulary ID; unknown words are broken into single letters
+    // (first letter normal, the rest with "##" in front, e.g. z ##e ##b ##r ##a) with ID 0.
+    function encodeSentence(sentence) {
+      const pieces = splitIntoTokens(sentence);
+      const encodedTokens = [];
+      let hadUnknownWord = false;
+
+      for (const piece of pieces) {
+        if (Object.hasOwn(tokenToId, piece)) {
+          // Known token: look up its ID in the vocabulary.
+          encodedTokens.push({
+            text: piece,
+            id: tokenToId[piece],
+            isUnknown: false
+          });
+        } else {
+          // Unknown word: split into single letters, adding "##" before every letter after the first.
+          hadUnknownWord = true;
+          const letters = Array.from(piece);
+
+          letters.forEach(function (letter, index) {
+            const subword = index === 0 ? letter : "##" + letter;
+            encodedTokens.push({
+              text: subword,
+              id: 0,
+              isUnknown: true
+            });
+          });
+        }
+      }
+
+      return {
+        tokens: encodedTokens,
+        hadUnknownWord: hadUnknownWord
+      };
+    }
+
+    // WHAT THIS DOES: Draws coloured token chips (word on top, ID below) into any container element.
+    // Reused by both Part 1 (Stage 3) and the custom sentence tester (Stage 7).
+    function renderTokenChipsInto(containerEl, encodedTokens) {
+      containerEl.textContent = "";
+
+      for (const token of encodedTokens) {
+        const colors = getChipColors(token.id);
+
+        const chip = document.createElement("div");
+        chip.className = "token-chip-card";
+        if (token.isUnknown) {
+          chip.classList.add("is-unknown");
+        }
+        chip.style.setProperty("--chip-bg", colors.bg);
+        chip.style.setProperty("--chip-border", colors.border);
+        chip.style.setProperty("--chip-text", colors.text);
+        chip.style.setProperty("--chip-id-bg", colors.idBg);
+
+        // Top half of chip: the token text
+        const wordEl = document.createElement("span");
+        wordEl.className = "token-chip-word";
+        wordEl.textContent = token.text;
+
+        // Bottom half of chip: the token ID
+        const idEl = document.createElement("span");
+        idEl.className = "token-chip-id";
+        idEl.textContent = "ID " + token.id;
+
+        chip.appendChild(wordEl);
+        chip.appendChild(idEl);
+        containerEl.appendChild(chip);
+      }
+    }
+
+    // WHAT THIS DOES: Displays the coloured token chips (word on top, ID below),
+    // the unknown-word note when needed, and the character/token summary numbers.
+    function renderTokenizedResult(rawSentence, encodedResult) {
+      tokenizeEmptyMessage.hidden = true;
+      tokenizeResultsBox.hidden = false;
+
+      const charCount = rawSentence.length;
+      const tokenCount = encodedResult.tokens.length;
+      const charsPerToken = tokenCount > 0 ? (charCount / tokenCount).toFixed(2) : "0.00";
+
+      charCountValue.textContent = charCount;
+      tokenCountValue.textContent = tokenCount;
+      charsPerTokenValue.textContent = charsPerToken;
+
+      renderTokenChipsInto(tokenChipsContainer, encodedResult.tokens);
+
+      // Show the teaching note whenever at least one unknown word was split into pieces.
+      unknownNote.hidden = !encodedResult.hadUnknownWord;
+    }
+
+    // WHAT THIS DOES: Runs the full Stage 2 vocabulary build, sets up the Stage 6 slider,
+    // and updates the vocabulary table on screen.
+    function buildAndRenderVocabulary() {
+      const result = buildVocabulary(trainingInput.value);
+      fullSortedEntries = result.sortedEntries;
+      totalTrainingTokens = result.totalTokens;
+
+      const totalWords = fullSortedEntries.length;
+      vocabLimitSlider.min = "0";
+      vocabLimitSlider.max = String(totalWords);
+      vocabLimitSlider.value = String(totalWords);
+
+      applyVocabularyLimit(totalWords);
+    }
+
+    // WHAT THIS DOES: Connects the "Build vocabulary" button, the "Words kept" slider,
+    // and the "Tokenize" button in Part 1.
+    buildVocabButton.addEventListener("click", function () {
+      buildAndRenderVocabulary();
+    });
+
+    vocabLimitSlider.addEventListener("input", function () {
+      const chosenLimit = Number(vocabLimitSlider.value);
+      applyVocabularyLimit(chosenLimit);
+    });
+
+    tokenizeButton.addEventListener("click", function () {
+      // If the user clicked "Tokenize" before building a vocabulary, build it automatically first.
+      if (vocabularyList.length === 0) {
+        buildAndRenderVocabulary();
+      }
+
+      hasTokenizedSentence = true;
+      const rawSentence = encodeSentenceInput.value;
+      const encodedResult = encodeSentence(rawSentence);
+      renderTokenizedResult(rawSentence, encodedResult);
+    });
+
+    // WHAT THIS DOES: Grabs the HTML elements in Part 2 that Stages 4 & 5 need to read and update.
+    const embeddingSentencesInput = document.getElementById("embedding-sentences");
+    const embedPlotButton = document.getElementById("embed-plot-btn");
+    const embedMessageBox = document.getElementById("embed-message");
+    const chartArea = document.getElementById("chart-area");
+    const modelProgressBox = document.getElementById("model-progress-box");
+    const modelProgressText = document.getElementById("model-progress-text");
+    const modelProgressPercent = document.getElementById("model-progress-percent");
+    const modelProgressBar = document.getElementById("model-progress-bar");
+    const pairsPanel = document.getElementById("pairs-panel");
+    const pairsMeta = document.getElementById("pairs-meta");
+    const pairsTableBody = document.getElementById("pairs-table-body");
+
+    // WHAT THIS DOES: Saves the loaded meaning-based AI model so we only download it once.
+    let meaningExtractor = null;
+
+    // WHAT THIS DOES: Turns any short string (like a 3-letter chunk) into a bucket number from 0 to 63.
+    function simpleHash64(text) {
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) {
+        hash = (hash * 31 + text.charCodeAt(i)) % 64;
+      }
+      return Math.abs(hash);
+    }
+
+    // WHAT THIS DOES: Turns one sentence into a spelling-based list of 64 numbers:
+    // 1) lowercase it, 2) take every 3 letters in a row, 3) count them into 64 hash buckets,
+    // 4) scale the list so its total geometric length is 1.
+    function makeSpellingEmbedding(sentence) {
+      const lower = sentence.toLowerCase().trim();
+      const vector = new Array(64).fill(0);
+
+      if (lower.length < 3) {
+        // Fallback for very short text (1 or 2 characters).
+        if (lower.length > 0) {
+          vector[simpleHash64(lower)] += 1;
+        }
+      } else {
+        // Slide a 3-letter window across the sentence one character at a time.
+        for (let i = 0; i <= lower.length - 3; i++) {
+          const threeLetters = lower.slice(i, i + 3);
+          const bucket = simpleHash64(threeLetters);
+          vector[bucket] += 1;
+        }
+      }
+
+      // Scale the 64 numbers so the vector has length 1 (unit vector).
+      let sumOfSquares = 0;
+      for (let i = 0; i < vector.length; i++) {
+        sumOfSquares += vector[i] * vector[i];
+      }
+      const vectorLength = Math.sqrt(sumOfSquares);
+
+      if (vectorLength > 0) {
+        for (let i = 0; i < vector.length; i++) {
+          vector[i] = vector[i] / vectorLength;
+        }
+      }
+
+      return vector;
+    }
+
+    // WHAT THIS DOES: Computes the dot product of two number lists of the same length.
+    function dotProduct(listA, listB) {
+      let total = 0;
+      for (let i = 0; i < listA.length; i++) {
+        total += listA[i] * listB[i];
+      }
+      return total;
+    }
+
+    // WHAT THIS DOES: Reduces 64-number lists down to 3 coordinates (x, y, z) in plain JavaScript.
+    // It uses simple PCA (power iteration) to find the 3 directions where sentences spread out the most.
+    function reduceVectorsTo3D(vectors) {
+      const count = vectors.length;
+      const dims = vectors[0].length;
+
+      // Step 1: Find the average value in each of the 64 positions.
+      const averages = new Array(dims).fill(0);
+      for (let i = 0; i < count; i++) {
+        for (let d = 0; d < dims; d++) {
+          averages[d] += vectors[i][d];
+        }
+      }
+      for (let d = 0; d < dims; d++) {
+        averages[d] /= count;
+      }
+
+      // Step 2: Center every vector around zero by subtracting the average.
+      const remaining = vectors.map(function (vec) {
+        return vec.map(function (value, d) {
+          return value - averages[d];
+        });
+      });
+
+      // Step 3: Find 3 perpendicular axes (x, y, z) one at a time using power iteration.
+      const coordsByAxis = [[], [], []];
+
+      for (let axis = 0; axis < 3; axis++) {
+        // Pick a predictable starting direction so the chart stays stable every click.
+        let direction = new Array(dims);
+        for (let d = 0; d < dims; d++) {
+          direction[d] = Math.sin((axis + 1) * (d + 1) * 1.3);
+        }
+
+        // Normalize the starting direction to length 1.
+        let dirLen = Math.sqrt(dotProduct(direction, direction)) || 1;
+        for (let d = 0; d < dims; d++) {
+          direction[d] /= dirLen;
+        }
+
+        // Refine the direction 25 times until it points along the strongest spread.
+        for (let step = 0; step < 25; step++) {
+          const nextDirection = new Array(dims).fill(0);
+
+          for (let i = 0; i < count; i++) {
+            const score = dotProduct(remaining[i], direction);
+            for (let d = 0; d < dims; d++) {
+              nextDirection[d] += score * remaining[i][d];
+            }
+          }
+
+          const nextLen = Math.sqrt(dotProduct(nextDirection, nextDirection));
+          if (nextLen < 1e-10) {
+            break;
+          }
+          for (let d = 0; d < dims; d++) {
+            direction[d] = nextDirection[d] / nextLen;
+          }
+        }
+
+        // Project every sentence onto this axis and remove that component for the next axis.
+        for (let i = 0; i < count; i++) {
+          const coordinate = dotProduct(remaining[i], direction);
+          coordsByAxis[axis].push(coordinate);
+
+          for (let d = 0; d < dims; d++) {
+            remaining[i][d] -= coordinate * direction[d];
+          }
+        }
+      }
+
+      // Pack the three axis arrays into { x, y, z } objects.
+      const points3D = [];
+      for (let i = 0; i < count; i++) {
+        points3D.push({
+          x: coordsByAxis[0][i],
+          y: coordsByAxis[1][i],
+          z: coordsByAxis[2][i]
+        });
+      }
+
+      return points3D;
+    }
+
+    // WHAT THIS DOES: Creates a short, readable label to display beside each 3D dot.
+    function makeShortLabel(sentence) {
+      const maxChars = 22;
+      if (sentence.length <= maxChars) {
+        return sentence;
+      }
+      const trimmed = sentence.slice(0, maxChars).trimEnd();
+      return trimmed + "...";
+    }
+
+    // WHAT THIS DOES: Shows or hides a helpful message above the 3D chart (for errors or notes).
+    function showEmbedMessage(text, isInfo) {
+      embedMessageBox.textContent = text;
+      embedMessageBox.classList.toggle("info", Boolean(isInfo));
+      embedMessageBox.hidden = false;
+    }
+
+    function hideEmbedMessage() {
+      embedMessageBox.hidden = true;
+      embedMessageBox.textContent = "";
+    }
+
+    // WHAT THIS DOES: Draws the interactive 3D scatter plot using Plotly.js inside the 520px chart area.
+    // If highlightIndex is provided (0 or higher), that sentence is drawn as a bigger orange dot.
+    function draw3DChart(sentences, points3D, modeLabel, highlightIndex) {
+      // Clear any placeholder text and switch the box to clean plot styling.
+      chartArea.textContent = "";
+      chartArea.classList.add("has-plot");
+
+      // Distinct light-mode colours for regular dots (orange is reserved for your custom added dot).
+      const dotPalette = [
+        "#4f46e5", "#0ea5e9", "#9333ea", "#ec4899",
+        "#10b981", "#eab308", "#ef4444", "#06b6d4",
+        "#6366f1", "#14b8a6", "#8b5cf6", "#3b82f6"
+      ];
+
+      const xValues = points3D.map(function (p) { return p.x; });
+      const yValues = points3D.map(function (p) { return p.y; });
+      const zValues = points3D.map(function (p) { return p.z; });
+      const shortLabels = sentences.map(function (sentence, i) {
+        const label = makeShortLabel(sentence);
+        return i === highlightIndex ? "★ " + label : label;
+      });
+      const colors = sentences.map(function (_, i) {
+        return i === highlightIndex ? "#f97316" : dotPalette[i % dotPalette.length];
+      });
+      const sizes = sentences.map(function (_, i) {
+        return i === highlightIndex ? 15 : 8;
+      });
+      const lineColors = sentences.map(function (_, i) {
+        return i === highlightIndex ? "#9a3412" : "#ffffff";
+      });
+      const lineWidths = sentences.map(function (_, i) {
+        return i === highlightIndex ? 2.5 : 1.5;
+      });
+
+      const trace = {
+        type: "scatter3d",
+        mode: "markers+text",
+        x: xValues,
+        y: yValues,
+        z: zValues,
+        text: shortLabels,
+        customdata: sentences,
+        textposition: "top right",
+        textfont: {
+          size: 12,
+          color: "#1e293b",
+          family: "system-ui, -apple-system, sans-serif"
+        },
+        marker: {
+          size: sizes,
+          color: colors,
+          opacity: 0.96,
+          line: {
+            color: lineColors,
+            width: lineWidths
+          }
+        },
+        hovertemplate:
+          "<b>%{customdata}</b><br>" +
+          "x: %{x:.2f} &nbsp; y: %{y:.2f} &nbsp; z: %{z:.2f}" +
+          "<extra></extra>"
+      };
+
+      const layout = {
+        height: 516,
+        margin: { l: 0, r: 0, t: 36, b: 0 },
+        paper_bgcolor: "#ffffff",
+        title: {
+          text: modeLabel + " 3D Sentence Embeddings (drag to rotate, scroll to zoom)",
+          font: { size: 14, color: "#334155", family: "system-ui, -apple-system, sans-serif" }
+        },
+        scene: {
+          bgcolor: "#f8faff",
+          xaxis: { title: "Axis 1 (x)", gridcolor: "#e2e8f0", zerolinecolor: "#cbd5e1" },
+          yaxis: { title: "Axis 2 (y)", gridcolor: "#e2e8f0", zerolinecolor: "#cbd5e1" },
+          zaxis: { title: "Axis 3 (z)", gridcolor: "#e2e8f0", zerolinecolor: "#cbd5e1" }
+        },
+        hoverlabel: {
+          bgcolor: "#0f172a",
+          bordercolor: "#4f46e5",
+          font: { color: "#ffffff", size: 13, family: "system-ui, -apple-system, sans-serif" }
+        }
+      };
+
+      Plotly.newPlot(chartArea, [trace], layout, {
+        responsive: true,
+        displaylogo: false
+      });
+    }
+
+    // WHAT THIS DOES: Calculates cosine similarity between two full embedding lists.
+    // A score close to 1.000 means very similar; close to 0.000 means unrelated.
+    function cosineSimilarity(vecA, vecB) {
+      let dot = 0;
+      let sumSqA = 0;
+      let sumSqB = 0;
+
+      for (let i = 0; i < vecA.length; i++) {
+        dot += vecA[i] * vecB[i];
+        sumSqA += vecA[i] * vecA[i];
+        sumSqB += vecB[i] * vecB[i];
+      }
+
+      const denom = Math.sqrt(sumSqA) * Math.sqrt(sumSqB);
+      return denom > 0 ? dot / denom : 0;
+    }
+
+    // WHAT THIS DOES: Compares every pair of sentences using their full embedding vectors
+    // and returns the top 5 most similar pairs, sorted highest score first.
+    function findClosestPairs(sentences, fullVectors) {
+      const pairs = [];
+
+      for (let i = 0; i < sentences.length; i++) {
+        for (let j = i + 1; j < sentences.length; j++) {
+          pairs.push({
+            sentenceA: sentences[i],
+            sentenceB: sentences[j],
+            score: cosineSimilarity(fullVectors[i], fullVectors[j])
+          });
+        }
+      }
+
+      pairs.sort(function (a, b) {
+        return b.score - a.score;
+      });
+
+      return pairs.slice(0, 5);
+    }
+
+    // WHAT THIS DOES: Renders the "Closest pairs" table under the 3D chart with 3-decimal scores.
+    function renderClosestPairsTable(pairs, vectorDims, modeLabel) {
+      pairsPanel.hidden = false;
+      pairsMeta.textContent = modeLabel + " · " + vectorDims + " numbers per sentence";
+      pairsTableBody.textContent = "";
+
+      pairs.forEach(function (pair, index) {
+        const row = document.createElement("tr");
+
+        const rankCell = document.createElement("td");
+        const rankPill = document.createElement("span");
+        rankPill.className = "id-pill";
+        rankPill.textContent = index + 1;
+        rankCell.appendChild(rankPill);
+
+        const sentenceACell = document.createElement("td");
+        sentenceACell.textContent = pair.sentenceA;
+
+        const sentenceBCell = document.createElement("td");
+        sentenceBCell.textContent = pair.sentenceB;
+
+        const scoreCell = document.createElement("td");
+        const scorePill = document.createElement("span");
+        scorePill.className = "score-pill";
+        scorePill.textContent = pair.score.toFixed(3);
+        scoreCell.appendChild(scorePill);
+
+        row.appendChild(rankCell);
+        row.appendChild(sentenceACell);
+        row.appendChild(sentenceBCell);
+        row.appendChild(scoreCell);
+        pairsTableBody.appendChild(row);
+      });
+    }
+
+    // WHAT THIS DOES: Updates the download progress bar while Xenova/all-MiniLM-L6-v2 loads.
+    function updateModelProgress(statusText, percent) {
+      modelProgressBox.hidden = false;
+      modelProgressText.textContent = statusText;
+      const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+      modelProgressBar.value = clamped;
+      modelProgressBar.textContent = clamped + "%";
+      modelProgressPercent.textContent = clamped + "%";
+    }
+
+    function hideModelProgress() {
+      modelProgressBox.hidden = true;
+    }
+
+    // WHAT THIS DOES: Loads transformers.js from jsDelivr CDN and creates the
+    // Xenova/all-MiniLM-L6-v2 feature-extraction pipeline, then embeds every sentence.
+    async function makeMeaningEmbeddings(sentences) {
+      // Browser security blocks model workers/fetching when opened directly as a file:// URL.
+      if (window.location.protocol === "file:") {
+        throw new Error("Page is opened over file:// instead of http://");
+      }
+
+      if (!meaningExtractor) {
+        updateModelProgress("Loading transformers.js from jsDelivr CDN...", 5);
+
+        const transformers = await import(
+          "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2/dist/transformers.min.js"
+        );
+
+        // Fetch the model straight from Hugging Face Hub instead of looking for local files.
+        transformers.env.allowLocalModels = false;
+
+        meaningExtractor = await transformers.pipeline(
+          "feature-extraction",
+          "Xenova/all-MiniLM-L6-v2",
+          {
+            progress_callback: function (info) {
+              if (info.status === "progress" && typeof info.progress === "number") {
+                const fileName = info.file ? " (" + info.file + ")" : "";
+                updateModelProgress("Downloading Xenova/all-MiniLM-L6-v2" + fileName, info.progress);
+              } else if (info.status === "initiate") {
+                const fileName = info.file ? " " + info.file : "";
+                updateModelProgress("Starting download:" + fileName, modelProgressBar.value || 10);
+              } else if (info.status === "ready") {
+                updateModelProgress("Model ready! Computing embeddings...", 100);
+              }
+            }
+          }
+        );
+      } else {
+        updateModelProgress("Computing meaning-based embeddings...", 100);
+      }
+
+      // Run each sentence through the model with mean pooling and length normalization.
+      const vectors = [];
+      for (const sentence of sentences) {
+        const output = await meaningExtractor(sentence, {
+          pooling: "mean",
+          normalize: true
+        });
+        vectors.push(Array.from(output.data));
+      }
+
+      hideModelProgress();
+      return vectors;
+    }
+
+    // WHAT THIS DOES: Grabs the Stage 7 elements for "Try your own word or sentence".
+    const customSentenceInput = document.getElementById("custom-sentence-input");
+    const tryOwnButton = document.getElementById("try-own-btn");
+    const customMessageBox = document.getElementById("custom-message");
+    const customResultsBox = document.getElementById("custom-results");
+    const customTokenChips = document.getElementById("custom-token-chips");
+    const customTokensMeta = document.getElementById("custom-tokens-meta");
+    const customUnknownNote = document.getElementById("custom-unknown-note");
+    const customVectorMeta = document.getElementById("custom-vector-meta");
+    const customVectorGrid = document.getElementById("custom-vector-grid");
+    const customNeighborsList = document.getElementById("custom-neighbors-list");
+
+    // WHAT THIS DOES: Remembers the most recent custom sentence so the Stage 6 slider can update its chips live.
+    let lastCustomSentence = "";
+
+    // WHAT THIS DOES: Runs the shared embedding, 3D plotting, and Closest pairs pipeline.
+    // Reused by both "Embed and plot" (highlightIndex = -1) and Stage 7 (highlightIndex = new sentence index).
+    async function runEmbeddingPipeline(highlightIndex) {
+      const selectedMode = document.querySelector('input[name="embedding-mode"]:checked').value;
+
+      // Read non-empty lines from the sentences text box.
+      const sentences = embeddingSentencesInput.value
+        .split("\n")
+        .map(function (line) { return line.trim(); })
+        .filter(function (line) { return line !== ""; });
+
+      // Need at least 4 sentences to build a meaningful 3D plot.
+      if (sentences.length < 4) {
+        hideModelProgress();
+        showEmbedMessage(
+          "Please enter at least 4 sentences (one per line) to plot in 3D. Currently found: " + sentences.length + ".",
+          false
+        );
+        return null;
+      }
+
+      if (typeof Plotly === "undefined") {
+        hideModelProgress();
+        showEmbedMessage(
+          "Plotly.js could not load from cdn.plot.ly. Please check your internet connection and refresh the page.",
+          false
+        );
+        return null;
+      }
+
+      hideEmbedMessage();
+      embedPlotButton.disabled = true;
+      tryOwnButton.disabled = true;
+
+      let fullVectors = null;
+      let activeModeLabel = "Spelling-based";
+
+      try {
+        if (selectedMode === "meaning") {
+          try {
+            fullVectors = await makeMeaningEmbeddings(sentences);
+            activeModeLabel = "Meaning-based";
+          } catch (error) {
+            // Fall back cleanly to spelling-based if meaning mode cannot load.
+            hideModelProgress();
+            showEmbedMessage(
+              "Meaning mode needs the page served over http - using spelling-based instead",
+              false
+            );
+            fullVectors = sentences.map(makeSpellingEmbedding);
+            activeModeLabel = "Spelling-based";
+          }
+        } else {
+          hideModelProgress();
+          fullVectors = sentences.map(makeSpellingEmbedding);
+          activeModeLabel = "Spelling-based";
+        }
+
+        // Reduce the full embedding lists to 3D (x, y, z) and render both the 3D plot and Closest pairs table.
+        const points3D = reduceVectorsTo3D(fullVectors);
+        draw3DChart(sentences, points3D, activeModeLabel, highlightIndex);
+
+        const closestPairs = findClosestPairs(sentences, fullVectors);
+        renderClosestPairsTable(closestPairs, fullVectors[0].length, activeModeLabel);
+
+        return {
+          sentences: sentences,
+          fullVectors: fullVectors,
+          activeModeLabel: activeModeLabel
+        };
+      } finally {
+        embedPlotButton.disabled = false;
+        tryOwnButton.disabled = false;
+      }
+    }
+
+    // WHAT THIS DOES: Finds the top K closest other sentences to one target sentence
+    // by reusing cosineSimilarity() on the full embedding lists.
+    function findClosestSentencesFor(targetIndex, sentences, fullVectors, topK) {
+      const targetVector = fullVectors[targetIndex];
+      const matches = [];
+
+      for (let i = 0; i < sentences.length; i++) {
+        if (i === targetIndex) {
+          continue;
+        }
+        matches.push({
+          sentence: sentences[i],
+          score: cosineSimilarity(targetVector, fullVectors[i])
+        });
+      }
+
+      matches.sort(function (a, b) {
+        return b.score - a.score;
+      });
+
+      return matches.slice(0, topK);
+    }
+
+    // WHAT THIS DOES: Displays the first 8 numbers of the newly added sentence's embedding vector.
+    function renderVectorPreview(vector, modeLabel) {
+      customVectorMeta.textContent =
+        "Showing 8 of " + vector.length + " numbers (" + modeLabel + ")";
+      customVectorGrid.textContent = "";
+
+      const firstEight = vector.slice(0, 8);
+      const maxAbs = Math.max.apply(
+        null,
+        firstEight.map(function (n) { return Math.abs(n); }).concat([0.001])
+      );
+
+      firstEight.forEach(function (num, idx) {
+        const tile = document.createElement("div");
+        tile.className = "vector-tile";
+        if (num > 0) {
+          tile.classList.add("positive");
+        } else if (num < 0) {
+          tile.classList.add("negative");
+        }
+
+        const indexEl = document.createElement("span");
+        indexEl.className = "vector-index";
+        indexEl.textContent = "d" + idx;
+
+        const valEl = document.createElement("span");
+        valEl.className = "vector-val";
+        valEl.textContent = num.toFixed(3);
+
+        const barTrack = document.createElement("div");
+        barTrack.className = "vector-bar-track";
+        barTrack.setAttribute("aria-hidden", "true");
+
+        const barFill = document.createElement("div");
+        barFill.className = "vector-bar-fill";
+        barFill.style.width = Math.round((Math.abs(num) / maxAbs) * 100) + "%";
+
+        barTrack.appendChild(barFill);
+        tile.appendChild(indexEl);
+        tile.appendChild(valEl);
+        tile.appendChild(barTrack);
+        customVectorGrid.appendChild(tile);
+      });
+    }
+
+    // WHAT THIS DOES: Displays the 3 closest sentences to your newly added sentence with 3-decimal scores.
+    function renderClosestNeighbors(neighbors) {
+      customNeighborsList.textContent = "";
+
+      neighbors.forEach(function (item, idx) {
+        const li = document.createElement("li");
+        li.className = "neighbor-item";
+
+        const left = document.createElement("div");
+        left.className = "neighbor-left";
+
+        const rank = document.createElement("span");
+        rank.className = "neighbor-rank";
+        rank.textContent = idx + 1;
+
+        const text = document.createElement("span");
+        text.className = "neighbor-text";
+        text.textContent = item.sentence;
+
+        left.appendChild(rank);
+        left.appendChild(text);
+
+        const right = document.createElement("div");
+        right.className = "neighbor-score-wrap";
+
+        const score = document.createElement("span");
+        score.className = "score-pill orange";
+        score.textContent = item.score.toFixed(3);
+
+        right.appendChild(score);
+        li.appendChild(left);
+        li.appendChild(right);
+        customNeighborsList.appendChild(li);
+      });
+    }
+
+    // WHAT THIS DOES: Handles the Stage 7 "Tokenize, embed & add to plot" flow by reusing
+    // the tokenizer, embedding pipeline, 3D plotter, and cosine similarity functions.
+    async function handleTryOwnSentence() {
+      const customText = customSentenceInput.value.trim();
+      if (customText === "") {
+        customMessageBox.textContent = "Please type a word or sentence first.";
+        customMessageBox.hidden = false;
+        return;
+      }
+
+      customMessageBox.hidden = true;
+
+      // Step 1: Make sure a vocabulary exists, then tokenize and show chips using existing helpers.
+      if (vocabularyList.length === 0) {
+        buildAndRenderVocabulary();
+      }
+      lastCustomSentence = customText;
+      const encodedResult = encodeSentence(customText);
+      renderTokenChipsInto(customTokenChips, encodedResult.tokens);
+      customTokensMeta.textContent = encodedResult.tokens.length + " tokens";
+      customUnknownNote.hidden = !encodedResult.hadUnknownWord;
+
+      // Step 2: Add the sentence to the sentence list text box and count its index.
+      const existingLines = embeddingSentencesInput.value
+        .split("\n")
+        .map(function (line) { return line.trim(); })
+        .filter(function (line) { return line !== ""; });
+
+      existingLines.push(customText);
+      embeddingSentencesInput.value = existingLines.join("\n");
+      const newSentenceIndex = existingLines.length - 1;
+
+      // Step 3: Reuse the embedding & 3D plotting pipeline, highlighting the new dot in orange.
+      const pipelineResult = await runEmbeddingPipeline(newSentenceIndex);
+      if (!pipelineResult) {
+        return;
+      }
+
+      // Show the first 8 numbers of its embedding vector and its 3 closest sentences.
+      const newVector = pipelineResult.fullVectors[newSentenceIndex];
+      const top3Neighbors = findClosestSentencesFor(
+        newSentenceIndex,
+        pipelineResult.sentences,
+        pipelineResult.fullVectors,
+        3
+      );
+
+      renderVectorPreview(newVector, pipelineResult.activeModeLabel);
+      renderClosestNeighbors(top3Neighbors);
+      customResultsBox.hidden = false;
+    }
+
+    // WHAT THIS DOES: Connects the "Embed and plot" button (Part 2) and "Tokenize, embed & add to plot" (Stage 7).
+    embedPlotButton.addEventListener("click", function () {
+      runEmbeddingPipeline(-1);
+    });
+
+    tryOwnButton.addEventListener("click", function () {
+      handleTryOwnSentence();
+    });
+
+    customSentenceInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleTryOwnSentence();
+      }
+    });
+  </script>
+</body>
+</html>

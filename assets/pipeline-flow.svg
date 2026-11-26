@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 230" width="1000" height="230" role="img" aria-label="Animated LLM pipeline flow diagram">
+  <defs>
+    <linearGradient id="panelBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eef2ff"/>
+    </linearGradient>
+    <linearGradient id="accent1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="accent2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+    <linearGradient id="accent3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+
+  <style>
+    @keyframes dashMove {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+    @keyframes barPulse1 {
+      0%, 100% { height: 42px; y: 112px; }
+      50% { height: 56px; y: 98px; }
+    }
+    @keyframes barPulse2 {
+      0%, 100% { height: 26px; y: 128px; }
+      50% { height: 48px; y: 106px; }
+    }
+    @keyframes barPulse3 {
+      0%, 100% { height: 50px; y: 104px; }
+      50% { height: 30px; y: 124px; }
+    }
+    @keyframes orbitDot {
+      0%, 100% { transform: translate(0px, 0px); }
+      50% { transform: translate(3px, -5px); }
+    }
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.25; r: 12; }
+      50% { opacity: 0.55; r: 16; }
+    }
+    .arrow-flow { stroke-dasharray: 6 6; animation: dashMove 1.1s linear infinite; }
+    .b1 { animation: barPulse1 2.4s ease-in-out infinite; }
+    .b2 { animation: barPulse2 2.8s ease-in-out infinite; }
+    .b3 { animation: barPulse3 2.6s ease-in-out infinite; }
+    .dot-bob { animation: orbitDot 3.4s ease-in-out infinite; }
+    .orange-halo { animation: glowPulse 2.2s ease-in-out infinite; }
+    .sans { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  </style>
+
+  <!-- Outer studio canvas -->
+  <rect x="0" y="0" width="1000" height="230" rx="18" fill="url(#panelBg)" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- Card 1: Input Text -->
+  <g transform="translate(24, 30)">
+    <rect width="196" height="170" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect width="196" height="5" rx="3" fill="url(#accent1)"/>
+    <text x="16" y="30" fill="#4f46e5" font-size="11" font-weight="800" letter-spacing="0.8" class="sans">STEP 1 · RAW TEXT</text>
+    <rect x="14" y="46" width="168" height="72" rx="9" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="24" y="72" fill="#0f172a" font-size="12.5" font-weight="700" class="mono">"The cat sat</text>
+    <text x="24" y="92" fill="#0f172a" font-size="12.5" font-weight="700" class="mono"> on the</text>
+    <text x="88" y="92" fill="#d97706" font-size="12.5" font-weight="800" class="mono">rocket."</text>
+    <text x="16" y="146" fill="#64748b" font-size="11" font-weight="600" class="sans">Lowercase + split</text>
+    <text x="16" y="160" fill="#64748b" font-size="11" font-weight="600" class="sans">punctuation (. , ! ? ')</text>
+  </g>
+
+  <!-- Connector 1 -> 2 -->
+  <line class="arrow-flow" x1="224" y1="115" x2="262" y2="115" stroke="#4f46e5" stroke-width="2.5"/>
+  <polygon points="262,109 272,115 262,121" fill="#4f46e5"/>
+
+  <!-- Card 2: Tokenizer Chips -->
+  <g transform="translate(274, 30)">
+    <rect width="212" height="170" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect width="212" height="5" rx="3" fill="url(#accent1)"/>
+    <text x="16" y="30" fill="#0284c7" font-size="11" font-weight="800" letter-spacing="0.8" class="sans">STEP 2 · TOKEN CHIPS</text>
+
+    <!-- Known chips -->
+    <rect x="14" y="46" width="54" height="44" rx="8" fill="#dcfce7" stroke="#4ade80" stroke-width="1.4"/>
+    <text x="41" y="65" text-anchor="middle" fill="#14532d" font-size="12" font-weight="800" class="mono">the</text>
+    <text x="41" y="83" text-anchor="middle" fill="#166534" font-size="9.5" font-weight="700" class="mono">ID 1</text>
+
+    <rect x="76" y="46" width="54" height="44" rx="8" fill="#e0e7ff" stroke="#818cf8" stroke-width="1.4"/>
+    <text x="103" y="65" text-anchor="middle" fill="#312e81" font-size="12" font-weight="800" class="mono">cat</text>
+    <text x="103" y="83" text-anchor="middle" fill="#3730a3" font-size="9.5" font-weight="700" class="mono">ID 4</text>
+
+    <rect x="138" y="46" width="58" height="44" rx="8" fill="#fce7f3" stroke="#f472b6" stroke-width="1.4"/>
+    <text x="167" y="65" text-anchor="middle" fill="#831843" font-size="12" font-weight="800" class="mono">sat</text>
+    <text x="167" y="83" text-anchor="middle" fill="#9d174d" font-size="9.5" font-weight="700" class="mono">ID 20</text>
+
+    <!-- Unknown subword chips -->
+    <rect x="14" y="100" width="40" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="3 2"/>
+    <text x="34" y="118" text-anchor="middle" fill="#92400e" font-size="11.5" font-weight="800" class="mono">r</text>
+    <text x="34" y="133" text-anchor="middle" fill="#92400e" font-size="9" font-weight="700" class="mono">ID 0</text>
+
+    <rect x="60" y="100" width="50" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="3 2"/>
+    <text x="85" y="118" text-anchor="middle" fill="#92400e" font-size="11.5" font-weight="800" class="mono">##o</text>
+    <text x="85" y="133" text-anchor="middle" fill="#92400e" font-size="9" font-weight="700" class="mono">ID 0</text>
+
+    <rect x="116" y="100" width="50" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="3 2"/>
+    <text x="141" y="118" text-anchor="middle" fill="#92400e" font-size="11.5" font-weight="800" class="mono">##c</text>
+    <text x="141" y="133" text-anchor="middle" fill="#92400e" font-size="9" font-weight="700" class="mono">ID 0</text>
+
+    <text x="180" y="124" fill="#92400e" font-size="13" font-weight="800" class="mono">…</text>
+    <text x="16" y="158" fill="#64748b" font-size="10.5" font-weight="600" class="sans">Live vocab slider updates chips</text>
+  </g>
+
+  <!-- Connector 2 -> 3 -->
+  <line class="arrow-flow" x1="490" y1="115" x2="528" y2="115" stroke="#7c3aed" stroke-width="2.5"/>
+  <polygon points="528,109 538,115 528,121" fill="#7c3aed"/>
+
+  <!-- Card 3: Embeddings Vector -->
+  <g transform="translate(540, 30)">
+    <rect width="196" height="170" rx="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+    <rect width="196" height="5" rx="3" fill="url(#accent2)"/>
+    <text x="16" y="30" fill="#7c3aed" font-size="11" font-weight="800" letter-spacing="0.8" class="sans">STEP 3 · VECTOR</text>
+    <text x="16" y="48" fill="#64748b" font-size="10.5" font-weight="600" class="mono">[0.18, 0.54, -0.09, ...]</text>
+
+    <!-- Animated vector bars -->
+    <rect x="20" y="64" width="156" height="78" rx="8" fill="#faf5ff" stroke="#e9d5ff"/>
+    <rect class="b1" x="30" y="112" width="12" height="42" rx="4" fill="#4f46e5"/>
+    <rect class="b2" x="48" y="128" width="12" height="26" rx="4" fill="#0ea5e9"/>
+    <rect class="b3" x="66" y="104" width="12" height="50" rx="4" fill="#7c3aed"/>
+    <rect class="b2" x="84" y="118" width="12" height="36" rx="4" fill="#ec4899"/>
+    <rect class="b1" x="102" y="110" width="12" height="44" rx="4" fill="#6366f1"/>
+    <rect class="b3" x="120" y="120" width="12" height="34" rx="4" fill="#06b6d4"/>
+    <rect class="b2" x="138" y="108" width="12" height="46" rx="4" fill="#8b5cf6"/>
+    <rect class="b1" x="156" y="126" width="12" height="28" rx="4" fill="#f97316"/>
+
+    <text x="16" y="159" fill="#64748b" font-size="10.5" font-weight="600" class="sans">64D Spelling · 384D MiniLM</text>
+  </g>
+
+  <!-- Connector 3 -> 4 -->
+  <line class="arrow-flow" x1="740" y1="115" x2="778" y2="115" stroke="#ea580c" stroke-width="2.5"/>
+  <polygon points="778,109 788,115 778,121" fill="#ea580c"/>
+
+  <!-- Card 4: 3D Plot + Similarity -->
+  <g transform="translate(790, 30)">
+    <rect width="186" height="170" rx="14" fill="#ffffff" stroke="#fdba74" stroke-width="1.5"/>
+    <rect width="186" height="5" rx="3" fill="url(#accent3)"/>
+    <text x="16" y="30" fill="#ea580c" font-size="11" font-weight="800" letter-spacing="0.8" class="sans">STEP 4 · 3D SPACE</text>
+
+    <rect x="14" y="44" width="158" height="96" rx="10" fill="#fffaf5" stroke="#fed7aa"/>
+    <!-- 3D grid lines -->
+    <line x1="34" y1="122" x2="154" y2="122" stroke="#cbd5e1" stroke-width="1"/>
+    <line x1="34" y1="122" x2="34" y2="56" stroke="#cbd5e1" stroke-width="1"/>
+    <line x1="34" y1="122" x2="74" y2="92" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+
+    <!-- Cluster points -->
+    <circle cx="62" cy="76" r="5" fill="#4f46e5"/>
+    <circle cx="78" cy="84" r="5" fill="#0ea5e9"/>
+    <circle cx="132" cy="108" r="5" fill="#9333ea"/>
+    <circle cx="144" cy="98" r="5" fill="#ec4899"/>
+    <circle cx="112" cy="68" r="4.5" fill="#10b981"/>
+
+    <!-- Highlighted custom orange point -->
+    <g class="dot-bob">
+      <circle class="orange-halo" cx="72" cy="64" r="13" fill="#f97316"/>
+      <circle cx="72" cy="64" r="7" fill="#f97316" stroke="#9a3412" stroke-width="1.8"/>
+      <text x="84" y="68" fill="#9a3412" font-size="10.5" font-weight="800" class="sans">★ You</text>
+    </g>
+
+    <text x="16" y="159" fill="#64748b" font-size="10.5" font-weight="600" class="sans">PCA 3D + Cosine Top Pairs</text>
+  </g>
+</svg>
